@@ -1,0 +1,41 @@
+{
+    "cli": {
+        "version": ">= 5.9.1"
+    },
+    "build": {
+        "production": {
+            "channel": "production",
+            "env": {
+                "EXPO_PUBLIC_BACKEND_URL": "http://192.168.1.14:8001"
+            },
+            "android": {
+                "buildType": "apk"
+            }
+        },
+        "preview": {
+            "channel": "preview",
+            "env": {
+                "EXPO_PUBLIC_BACKEND_URL": "http://192.168.1.14:8001"
+            },
+            "distribution": "internal",
+            "android": {
+                "buildType": "apk"
+            }
+        },
+        "development": {
+            "channel": "development",
+            "env": {
+                "EXPO_PUBLIC_BACKEND_URL": "http://192.168.1.14:8001"
+            },
+            "distribution": "internal",
+            "developmentClient": true
+        }
+    },
+    "submit": {
+        "production": {
+            "android": {
+                "track": "internal"
+            }
+        }
+    }
+}

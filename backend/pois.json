@@ -1,0 +1,156 @@
+[
+    {
+        "_id": {
+            "$oid": "69859a4cd80ebd1c9758f1ae"
+        },
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "name": "entry gate",
+        "category": "entrance",
+        "x": 191,
+        "y": 83,
+        "description": "Main entry point",
+        "createdAt": {
+            "$date": "2026-02-16T12:43:42.622Z"
+        },
+        "_class": "com.wayfinding.indoor.model.POI"
+    },
+    {
+        "_id": {
+            "$oid": "6985bafcd80ebd1c9758f1b9"
+        },
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "name": "corridors",
+        "category": "pathway",
+        "x": 194,
+        "y": 432,
+        "description": "Main transit corridor",
+        "createdAt": {
+            "$date": "2026-02-16T12:45:27.044Z"
+        },
+        "_class": "com.wayfinding.indoor.model.POI"
+    },
+    {
+        "_id": {
+            "$oid": "698b7b18399ebc682c0e97ae"
+        },
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "name": "near office hall",
+        "category": "waypoint",
+        "x": 402,
+        "y": 432,
+        "createdAt": {
+            "$date": "2026-02-10T18:38:16.936Z"
+        },
+        "_class": "com.wayfinding.indoor.model.POI"
+    },
+    {
+        "_id": {
+            "$oid": "69931163bbd3e029f6a10156"
+        },
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "name": "reached-office hall",
+        "category": "waypoint",
+        "x": 669,
+        "y": 432,
+        "createdAt": {
+            "$date": "2026-02-16T12:45:23.201Z"
+        },
+        "_class": "com.wayfinding.indoor.model.POI"
+    },
+    {
+        "_id": {
+            "$oid": "6985bafbd80ebd1c9758f1b6"
+        },
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "name": "OFFICE HALL",
+        "category": "office",
+        "x": 693,
+        "y": 223,
+        "description": "Primary workspace",
+        "createdAt": {
+            "$date": "2026-02-06T09:57:15.953Z"
+        },
+        "_class": "com.wayfinding.indoor.model.POI"
+    },
+    {
+        "_id": {
+            "$oid": "69931258bbd3e029f6a10163"
+        },
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "name": "near-office-2",
+        "category": "waypoint",
+        "x": 390,
+        "y": 643,
+        "createdAt": {
+            "$date": "2026-02-16T12:49:28.712Z"
+        },
+        "_class": "com.wayfinding.indoor.model.POI"
+    },
+    {
+        "_id": {
+            "$oid": "698b7b19399ebc682c0e97af"
+        },
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "name": "conference-hall (top)",
+        "category": "waypoint",
+        "x": 188,
+        "y": 654,
+        "createdAt": {
+            "$date": "2026-02-10T18:38:17.013Z"
+        },
+        "_class": "com.wayfinding.indoor.model.POI"
+    },
+    {
+        "_id": {
+            "$oid": "6985bafbd80ebd1c9758f1b5"
+        },
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "name": "CONFERENCE",
+        "category": "room",
+        "x": 185,
+        "y": 924,
+        "description": "Main meeting room",
+        "createdAt": {
+            "$date": "2026-02-16T12:45:19.385Z"
+        },
+        "_class": "com.wayfinding.indoor.model.POI"
+    },
+    {
+        "_id": {
+            "$oid": "6993125cbbd3e029f6a10164"
+        },
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "name": "near conference-hall",
+        "category": "waypoint",
+        "x": 387,
+        "y": 861,
+        "createdAt": {
+            "$date": "2026-02-16T12:49:32.977Z"
+        },
+        "_class": "com.wayfinding.indoor.model.POI"
+    },
+    {
+        "_id": {
+            "$oid": "698b7b19399ebc682c0e97b0"
+        },
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "name": "reached-office hall2",
+        "category": "office",
+        "x": 681,
+        "y": 820,
+        "createdAt": {
+            "$date": "2026-02-10T18:38:17.049Z"
+        },
+        "_class": "com.wayfinding.indoor.model.POI"
+    }
+]

@@ -1,0 +1,112 @@
+[
+    {
+        "_id": {
+            "$oid": "699309c4523fa963603103f7"
+        },
+        "nodeId": "n1",
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "x": 191,
+        "y": 83,
+        "_class": "com.wayfinding.indoor.model.GraphNode"
+    },
+    {
+        "_id": {
+            "$oid": "699309c4523fa963603103f8"
+        },
+        "nodeId": "n2",
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "x": 194,
+        "y": 432,
+        "_class": "com.wayfinding.indoor.model.GraphNode"
+    },
+    {
+        "_id": {
+            "$oid": "699309c4523fa963603103f9"
+        },
+        "nodeId": "n3",
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "x": 402,
+        "y": 432,
+        "_class": "com.wayfinding.indoor.model.GraphNode"
+    },
+    {
+        "_id": {
+            "$oid": "699309c4523fa963603103fa"
+        },
+        "nodeId": "n4",
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "x": 669,
+        "y": 432,
+        "_class": "com.wayfinding.indoor.model.GraphNode"
+    },
+    {
+        "_id": {
+            "$oid": "699309c4523fa963603103fb"
+        },
+        "nodeId": "n5",
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "x": 693,
+        "y": 223,
+        "_class": "com.wayfinding.indoor.model.GraphNode"
+    },
+    {
+        "_id": {
+            "$oid": "699309c4523fa963603103fc"
+        },
+        "nodeId": "n6",
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "x": 390,
+        "y": 643,
+        "_class": "com.wayfinding.indoor.model.GraphNode"
+    },
+    {
+        "_id": {
+            "$oid": "699309c4523fa963603103fd"
+        },
+        "nodeId": "n7",
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "x": 188,
+        "y": 654,
+        "_class": "com.wayfinding.indoor.model.GraphNode"
+    },
+    {
+        "_id": {
+            "$oid": "699309c4523fa963603103fe"
+        },
+        "nodeId": "n8",
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "x": 185,
+        "y": 924,
+        "_class": "com.wayfinding.indoor.model.GraphNode"
+    },
+    {
+        "_id": {
+            "$oid": "699309c4523fa963603103ff"
+        },
+        "nodeId": "n9",
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "x": 387,
+        "y": 861,
+        "_class": "com.wayfinding.indoor.model.GraphNode"
+    },
+    {
+        "_id": {
+            "$oid": "699309c4523fa96360310400"
+        },
+        "nodeId": "n10",
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorId": "698cd20d9015af450921723d",
+        "x": 681,
+        "y": 820,
+        "_class": "com.wayfinding.indoor.model.GraphNode"
+    }
+]

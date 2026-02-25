@@ -1,0 +1,13 @@
+[
+    {
+        "_id": {
+            "$oid": "698b7b18399ebc682c0e97ac"
+        },
+        "buildingId": "ATOLL-001",
+        "name": "Atoll Solutions",
+        "description": "Atoll Solutions Office Building",
+        "address": "Tech Park, Dubai",
+        "totalFloors": 1,
+        "_class": "com.wayfinding.indoor.model.Building"
+    }
+]

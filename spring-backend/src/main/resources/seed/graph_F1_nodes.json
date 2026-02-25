@@ -1,0 +1,12 @@
+[
+  { "nodeId": "n1", "buildingId": "698b7b18399ebc682c0e97ac", "floorId": "F1", "x": 105, "y": 85 },
+  { "nodeId": "n2", "buildingId": "698b7b18399ebc682c0e97ac", "floorId": "F1", "x": 105, "y": 405 },
+  { "nodeId": "n3", "buildingId": "698b7b18399ebc682c0e97ac", "floorId": "F1", "x": 215, "y": 405 },
+  { "nodeId": "n4", "buildingId": "698b7b18399ebc682c0e97ac", "floorId": "F1", "x": 375, "y": 405 },
+  { "nodeId": "n5", "buildingId": "698b7b18399ebc682c0e97ac", "floorId": "F1", "x": 375, "y": 200 },
+  { "nodeId": "n6", "buildingId": "698b7b18399ebc682c0e97ac", "floorId": "F1", "x": 215, "y": 625 },
+  { "nodeId": "n7", "buildingId": "698b7b18399ebc682c0e97ac", "floorId": "F1", "x": 105, "y": 625 },
+  { "nodeId": "n8", "buildingId": "698b7b18399ebc682c0e97ac", "floorId": "F1", "x": 105, "y": 860 },
+  { "nodeId": "n9", "buildingId": "698b7b18399ebc682c0e97ac", "floorId": "F1", "x": 215, "y": 860 },
+  { "nodeId": "n10", "buildingId": "698b7b18399ebc682c0e97ac", "floorId": "F1", "x": 380, "y": 860 }
+]

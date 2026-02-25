@@ -1,0 +1,17 @@
+[
+    {
+        "_id": {
+            "$oid": "698cd20d9015af450921723d"
+        },
+        "floorId": "F1",
+        "buildingId": "698b7b18399ebc682c0e97ac",
+        "floorNumber": 1,
+        "name": "First Floor",
+        "width": 950,
+        "height": 1088,
+        "scale": 1,
+        "mapImageUrl": "/maps/698b7b18399ebc682c0e97ac/F1.png",
+        "mapImage": "/maps/698b7b18399ebc682c0e97ac/F1.png",
+        "_class": "com.wayfinding.indoor.model.Floor"
+    }
+]
