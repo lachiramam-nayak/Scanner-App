@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import {
   View,
   Text,
@@ -16,50 +16,10 @@ import {
   State,
 } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Polyline, Polygon } from 'react-native-svg';
+import Svg, { Polyline } from 'react-native-svg';
 import { POI, UserLocation, Beacon } from '../store/appStore';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const distance = (ax: number, ay: number, bx: number, by: number) => {
-  const dx = ax - bx;
-  const dy = ay - by;
-  return Math.sqrt(dx * dx + dy * dy);
-};
-
-const getRouteHeading = (
-  userLocation: UserLocation | null | undefined,
-  route: Array<{ x: number; y: number; type: string }> | undefined
-) => {
-  if (!userLocation || !route || route.length < 2) return 0;
-
-  let bestIndex = 0;
-  let bestDist = Number.POSITIVE_INFINITY;
-
-  for (let i = 0; i < route.length - 1; i += 1) {
-    const a = route[i];
-    const b = route[i + 1];
-    const abx = b.x - a.x;
-    const aby = b.y - a.y;
-    const apx = userLocation.x - a.x;
-    const apy = userLocation.y - a.y;
-    const abLenSq = abx * abx + aby * aby;
-    const t = abLenSq === 0 ? 0 : Math.max(0, Math.min(1, (apx * abx + apy * aby) / abLenSq));
-    const projX = a.x + t * abx;
-    const projY = a.y + t * aby;
-    const d = distance(userLocation.x, userLocation.y, projX, projY);
-    if (d < bestDist) {
-      bestDist = d;
-      bestIndex = i;
-    }
-  }
-
-  const start = route[bestIndex];
-  const end = route[bestIndex + 1];
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-  return angle + 90;
-};
 
 export interface IndoorMapViewerHandle {
   rotateBy: (deltaDeg: number) => void;
@@ -268,28 +228,17 @@ export const IndoorMapViewer = forwardRef<IndoorMapViewerHandle, IndoorMapViewer
 
   const renderUserMarker = () => {
     if (!userLocation) return null;
-    const heading = getRouteHeading(userLocation, route);
     return (
       <Animated.View
         style={[
           styles.marker,
           styles.userMarker,
           {
-            left: Animated.subtract(userXAnim, 14),
-            top: Animated.subtract(userYAnim, 14),
-            transform: [{ rotate: `${heading}deg` }],
+            left: Animated.subtract(userXAnim, 8),
+            top: Animated.subtract(userYAnim, 8),
           },
         ]}
-      >
-        <Svg width={28} height={28} viewBox="0 0 28 28">
-          <Polygon
-            points="14,2 26,24 14,20 2,24"
-            fill="#4A90FF"
-            stroke="#ffffff"
-            strokeWidth={1.5}
-          />
-        </Svg>
-      </Animated.View>
+      />
     );
   };
 
@@ -518,8 +467,12 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   userMarker: {
-    width: 28,
-    height: 28,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#4A90FF',
+    borderWidth: 2,
+    borderColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
   },

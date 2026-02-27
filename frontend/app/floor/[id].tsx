@@ -89,6 +89,9 @@ export default function FloorDetailScreen() {
 
   // Update user location when position changes
   useEffect(() => {
+    if (userLocation?.source === 'sensor') {
+      return;
+    }
     if (currentPosition && currentPosition.valid && currentPosition.floorId === id) {
       setUserLocation({
         building_id: currentPosition.buildingId,
@@ -100,7 +103,7 @@ export default function FloorDetailScreen() {
       });
       setLocationMode('beacon');
     }
-  }, [currentPosition, id]);
+  }, [currentPosition, id, userLocation?.source, setLocationMode, setUserLocation]);
 
   const handleStartBeaconScanning = async () => {
     const success = await startBeaconScanning({ batchInterval: 2000, rssiThreshold: -100 });
@@ -520,14 +523,7 @@ export default function FloorDetailScreen() {
               }
               mapWidth={floor.width}
               mapHeight={floor.height}
-              userLocation={currentPosition && currentPosition.valid && currentPosition.floorId === id ? {
-                building_id: floor.building_id,
-                floor_id: id || '',
-                x: currentPosition.x,
-                y: currentPosition.y,
-                source: 'beacon',
-                timestamp: new Date(),
-              } : null}
+              userLocation={userLocation && userLocation.floor_id === (id || '') ? userLocation : null}
               destination={selectedDestination}
               route={navigationRoute?.route}
               beacons={beacons}

@@ -174,6 +174,13 @@ export default function MapScreen() {
     return [];
   }, [fixedRoute, fixedRouteKey, navigationRoute, userLocation, selectedDestination, selectedFloor]);
 
+  const displayedRoute = useMemo(() => {
+    if (!effectiveRoute || effectiveRoute.length === 0) {
+      return undefined;
+    }
+    return effectiveRoute;
+  }, [effectiveRoute]);
+
   useEffect(() => {
     loadData();
   }, [loadData]);
@@ -216,7 +223,8 @@ export default function MapScreen() {
     if (!trackerRef.current || !selectedFloor) return;
     trackerRef.current.setConfig({
       scanIntervalMs: 500,
-      stepLengthM: 0.7,
+      stepLengthM: 1.0,
+      minStepPx: 4,
       rssiThreshold: -100,
       kalmanProcessNoise: 0.01,
       kalmanMeasurementNoise: 2,
@@ -225,9 +233,26 @@ export default function MapScreen() {
       n: 2.5,
     });
     trackerRef.current.setBeacons(beacons);
+    const floorAny = selectedFloor as any;
+    const mapWidthPx = Number.isFinite(Number(floorAny.width)) && Number(floorAny.width) > 0
+      ? Number(floorAny.width)
+      : 1;
+    const mapHeightPx = Number.isFinite(Number(floorAny.height)) && Number(floorAny.height) > 0
+      ? Number(floorAny.height)
+      : 1;
+    const floorScale = Number(floorAny.scale);
+    const realWidthM = Number.isFinite(floorScale) && floorScale > 0
+      ? mapWidthPx / floorScale
+      : mapWidthPx;
+    const realHeightM = Number.isFinite(floorScale) && floorScale > 0
+      ? mapHeightPx / floorScale
+      : mapHeightPx;
     trackerRef.current.setRoute(
-      displayedRoute ? displayedRoute.map((p) => ({ x: p.x, y: p.y })) : [],
-      selectedFloor.scale || 10
+      displayedRoute ? displayedRoute.map((p: { x: number; y: number }) => ({ x: p.x, y: p.y })) : [],
+      mapWidthPx,
+      mapHeightPx,
+      realWidthM,
+      realHeightM
     );
   }, [beacons, displayedRoute, selectedFloor]);
 
@@ -273,13 +298,6 @@ export default function MapScreen() {
     setFixedRoute(null);
     setFixedRouteKey(null);
   };
-
-  const displayedRoute = useMemo(() => {
-    if (!effectiveRoute || effectiveRoute.length === 0) {
-      return undefined;
-    }
-    return effectiveRoute;
-  }, [effectiveRoute]);
 
   const turnInstruction = useMemo(() => {
     return getTurnInstruction(userLocation, displayedRoute);

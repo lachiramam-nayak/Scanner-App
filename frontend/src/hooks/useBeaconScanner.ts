@@ -66,7 +66,10 @@ export function useBeaconScanner(): UseBeaconScannerResult {
 
   // Strict PDR mode state
   const [pdrActive, setPdrActive] = useState(false);
+  const pdrActiveRef = useRef(false);
   const pdrStartedRef = useRef(false);
+  const hasInitialFixRef = useRef(false);
+  const isComputingFixRef = useRef(false);
   const initialPdrPositionRef = useRef<{ x: number; y: number; buildingId: string; floorId: string } | null>(null);
 
   // Refs to track latest values in callbacks
@@ -81,14 +84,24 @@ export function useBeaconScanner(): UseBeaconScannerResult {
     currentPositionRef.current = currentPosition;
   }, [currentPosition]);
 
+  useEffect(() => {
+    pdrActiveRef.current = pdrActive;
+  }, [pdrActive]);
+
   /**
    * Handle incoming beacon data and compute position
    */
   const handleBeaconsFound = useCallback(async (beacons: ScannedBeacon[]) => {
     setScannedBeacons(beacons);
 
-    // If strict PDR mode is active, ignore all beacon updates
-    if (pdrActive) {
+    // Ignore beacon updates once PDR starts, or after one-shot fix is locked.
+    if (pdrActiveRef.current || pdrStartedRef.current) {
+      return;
+    }
+    if (hasInitialFixRef.current) {
+      return;
+    }
+    if (isComputingFixRef.current) {
       return;
     }
 
@@ -112,6 +125,7 @@ export function useBeaconScanner(): UseBeaconScannerResult {
       .slice(0, 3);
 
     try {
+      isComputingFixRef.current = true;
       setIsPositioning(true);
       setPositionError(null);
 
@@ -127,33 +141,39 @@ export function useBeaconScanner(): UseBeaconScannerResult {
       const position = await positioningApi.computePosition(payload as any);
 
       if (position.valid) {
+        hasInitialFixRef.current = true;
         setCurrentPosition(position);
 
-        // Only set initial PDR position if not started
-        if (!pdrStartedRef.current) {
-          initialPdrPositionRef.current = {
+        initialPdrPositionRef.current = {
+          x: position.x,
+          y: position.y,
+          buildingId: position.buildingId,
+          floorId: position.floorId,
+        };
+        // Also update global store user location
+        try {
+          const userLoc: UserLocation = {
+            building_id: position.buildingId,
+            floor_id: position.floorId,
             x: position.x,
             y: position.y,
-            buildingId: position.buildingId,
-            floorId: position.floorId,
+            source: 'beacon',
+            timestamp: new Date(),
           };
-          // Also update global store user location
-          try {
-            const userLoc: UserLocation = {
-              building_id: position.buildingId,
-              floor_id: position.floorId,
-              x: position.x,
-              y: position.y,
-              source: 'beacon',
-              timestamp: new Date(),
-            };
-            setUserLocation(userLoc);
-          } catch (e) {
-            console.warn('[useBeaconScanner] Failed to set user location in store', e);
-          }
+          setUserLocation(userLoc);
+        } catch (e) {
+          console.warn('[useBeaconScanner] Failed to set user location in store', e);
         }
 
+        // One-shot scan mode: lock initial position and stop beacon updates.
+        if (beaconScanner.isScanningActive()) {
+          beaconScanner.stopScanning();
+        }
+        setIsScanning(false);
+        setScannedBeacons([]);
+
         console.log(`[useBeaconScanner] Position (from strongest beacon): (${position.x.toFixed(1)}, ${position.y.toFixed(1)}) on ${position.floorName}`);
+        console.log('[useBeaconScanner] Initial fix locked, beacon scanning stopped (one-shot mode)');
       } else {
         setPositionError(position.errorMessage || 'Position computation failed');
       }
@@ -161,9 +181,16 @@ export function useBeaconScanner(): UseBeaconScannerResult {
       console.error('[useBeaconScanner] Position error:', error);
       setPositionError(error instanceof Error ? error.message : 'Unknown error');
     } finally {
+      isComputingFixRef.current = false;
       setIsPositioning(false);
     }
-  }, [pdrActive]);
+  }, [setUserLocation]);
+
+  const toPositiveNumber = useCallback((value: unknown): number | null => {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return n;
+  }, []);
 
   useEffect(() => {
     if (!trackerRef.current) {
@@ -196,6 +223,16 @@ export function useBeaconScanner(): UseBeaconScannerResult {
       });
       return false;
     }
+
+    // Fresh one-shot cycle: stop any active PDR session first.
+    trackerRef.current?.stopSensors();
+    setPdrActive(false);
+    pdrActiveRef.current = false;
+    pdrStartedRef.current = false;
+
+    // Starting scan means we want a fresh one-shot fix.
+    hasInitialFixRef.current = false;
+    initialPdrPositionRef.current = null;
 
     // store the configured RSSI threshold so the handler uses the same value
     rssiThresholdRef.current = options?.rssiThreshold ?? -100;
@@ -252,29 +289,71 @@ export function useBeaconScanner(): UseBeaconScannerResult {
 
       // Strict PDR mode: set anchor, route, sensors, and callback ONCE
       if (trackerRef.current && !pdrStartedRef.current) {
+        trackerRef.current.setConfig({
+          stepLengthM: 1.0,
+          rssiThreshold: -100,
+          kalmanProcessNoise: 0.01,
+          kalmanMeasurementNoise: 2,
+          deviationThresholdM: 2,
+          snapToleranceM: 1.5,
+          n: 2.5,
+          minStepPx: 4,
+        });
         trackerRef.current.setAnchorPosition(initial.x, initial.y);
         // Get map and real-world dimensions from selectedFloor and navigationRoute
         const selectedFloor = useAppStore.getState().selectedFloor;
         let mapWidthPx = 1, mapHeightPx = 1, realWidthM = 1, realHeightM = 1;
         if (selectedFloor) {
-          // Prefer mapWidth/mapHeight from IndoorMapViewer props if available, else fallback to floor width/height
-          mapWidthPx = selectedFloor.mapImage ? selectedFloor.width : 1;
-          mapHeightPx = selectedFloor.mapImage ? selectedFloor.height : 1;
-          realWidthM = selectedFloor.width;
-          realHeightM = selectedFloor.height;
+          const floorWidth = toPositiveNumber((selectedFloor as any).width);
+          const floorHeight = toPositiveNumber((selectedFloor as any).height);
+          const floorScale = toPositiveNumber((selectedFloor as any).scale);
+
+          if (floorWidth && floorHeight && floorScale) {
+            // scale is pixels per meter, so derive real-world dimensions in meters.
+            mapWidthPx = floorWidth;
+            mapHeightPx = floorHeight;
+            realWidthM = floorWidth / floorScale;
+            realHeightM = floorHeight / floorScale;
+          } else if (floorWidth && floorHeight) {
+            mapWidthPx = floorWidth;
+            mapHeightPx = floorHeight;
+            realWidthM = floorWidth;
+            realHeightM = floorHeight;
+          } else {
+            console.warn('[useBeaconScanner] Invalid floor dimensions, using fallback scaling', {
+              floorId: selectedFloor.id,
+              width: (selectedFloor as any).width,
+              height: (selectedFloor as any).height,
+              scale: (selectedFloor as any).scale,
+            });
+          }
         }
         trackerRef.current.setRoute(route.route, mapWidthPx, mapHeightPx, realWidthM, realHeightM);
         trackerRef.current.setPositionCallback((p) => {
           // Snap to route and update global store
           const snapped = trackerRef.current ? trackerRef.current.snapToRoute(p.x, p.y) : { x: p.x, y: p.y };
+          const timestamp = new Date();
           setUserLocation({
             building_id: initial.buildingId,
             floor_id: initial.floorId,
             x: snapped.x,
             y: snapped.y,
             source: 'sensor',
-            timestamp: new Date(),
+            timestamp,
           });
+          setCurrentPosition((prev) => ({
+            buildingId: initial.buildingId,
+            buildingName: prev?.buildingName || '',
+            floorId: initial.floorId,
+            floorName: prev?.floorName || '',
+            floorNumber: prev?.floorNumber || 0,
+            x: snapped.x,
+            y: snapped.y,
+            method: prev?.method || 'nearest',
+            beaconsUsed: prev?.beaconsUsed || 0,
+            valid: true,
+            errorMessage: null,
+          }));
         });
         trackerRef.current.startSensors();
         setPdrActive(true);
@@ -290,14 +369,25 @@ export function useBeaconScanner(): UseBeaconScannerResult {
     } finally {
       setIsNavigating(false);
     }
-  }, []);
+  }, [setNavigationRouteStore, setUserLocation, toPositiveNumber]);
 
   /**
    * Clear navigation route
    */
   const clearNavigation = useCallback(() => {
     setNavigationRoute(null);
-  }, []);
+    try {
+      setNavigationRouteStore(null);
+    } catch (e) {
+      console.warn('[useBeaconScanner] Failed to clear navigation route in store', e);
+    }
+    trackerRef.current?.stopSensors();
+    setPdrActive(false);
+    pdrActiveRef.current = false;
+    pdrStartedRef.current = false;
+    hasInitialFixRef.current = false;
+    initialPdrPositionRef.current = null;
+  }, [setNavigationRouteStore]);
 
   /**
    * Cleanup on unmount
