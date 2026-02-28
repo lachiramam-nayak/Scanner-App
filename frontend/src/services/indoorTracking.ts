@@ -322,22 +322,21 @@ export class IndoorTracker {
       headingRad: this.headingRad,
       lastPos: this.lastPos,
     });
-    // Strict route progression: advance along polyline segments instead of heading-based XY drift.
-    if (this.route.length >= 2) {
-      const progress = this.routeProgress || this.projectToRoute(this.lastPos.x, this.lastPos.y);
-      if (progress) {
-        const next = this.advanceAlongRoute(progress.segmentIndex, progress.t, stepPx);
-        this.routeProgress = { segmentIndex: next.segmentIndex, t: next.t };
-        this.updatePosition(next.x, next.y, 'sensor');
-        return;
-      }
+    // Route-only progression: never drift with free heading movement.
+    if (this.route.length < 2) {
+      console.warn('[IndoorTracker] Route unavailable; skipping sensor step to avoid drift');
+      return;
     }
 
-    // Fallback when route is unavailable.
-    const nx = this.lastPos.x + stepPx * Math.cos(this.headingRad);
-    const ny = this.lastPos.y + stepPx * Math.sin(this.headingRad);
-    if (!Number.isFinite(nx) || !Number.isFinite(ny)) return;
-    this.updatePosition(nx, ny, 'sensor');
+    const progress = this.routeProgress || this.projectToRoute(this.lastPos.x, this.lastPos.y);
+    if (!progress) {
+      console.warn('[IndoorTracker] Could not project to route; skipping sensor step');
+      return;
+    }
+
+    const next = this.advanceAlongRoute(progress.segmentIndex, progress.t, stepPx);
+    this.routeProgress = { segmentIndex: next.segmentIndex, t: next.t };
+    this.updatePosition(next.x, next.y, 'sensor');
   }
 
   private snapToRoute(x: number, y: number) {

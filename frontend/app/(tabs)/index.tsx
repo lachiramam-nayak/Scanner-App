@@ -224,7 +224,7 @@ export default function MapScreen() {
     trackerRef.current.setConfig({
       scanIntervalMs: 500,
       stepLengthM: 1.0,
-      minStepPx: 4,
+      minStepPx: 100,
       rssiThreshold: -100,
       kalmanProcessNoise: 0.01,
       kalmanMeasurementNoise: 2,
