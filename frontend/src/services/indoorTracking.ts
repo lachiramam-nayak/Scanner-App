@@ -207,7 +207,7 @@ export class IndoorTracker {
         if (!Number.isFinite(magnitude)) return;
         const now = Date.now();
         // simple step detection threshold
-        if (magnitude > 1.2 && now - this.lastStepTime > 350) {
+        if (magnitude > 1.1 && now - this.lastStepTime > 350) {
           this.lastStepTime = now;
           this.applyDeadReckoningStep();
         }

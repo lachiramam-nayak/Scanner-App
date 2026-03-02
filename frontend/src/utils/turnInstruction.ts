@@ -1,6 +1,6 @@
 import type { UserLocation } from '../store/appStore';
 
-const TURN_RADIUS = 40;
+const TURN_RADIUS = 100;
 
 const distance = (ax: number, ay: number, bx: number, by: number) => {
   const dx = ax - bx;
@@ -51,11 +51,10 @@ export const getTurnInstruction = (
   if (mag1 === 0 || mag2 === 0) return null;
 
   const angle = Math.acos(Math.max(-1, Math.min(1, dot / (mag1 * mag2)))) * (180 / Math.PI);
-  const distanceLabel = Math.max(1, Math.round(closestDist));
-  if (angle < 20) return `In ${distanceLabel} m, continue straight`;
+  if (angle < 20) return null;
 
   const cross = v1x * v2y - v1y * v2x;
   return cross > 0
-    ? `In ${distanceLabel} m, turn right`
-    : `In ${distanceLabel} m, turn left`;
+    ? 'After one step, turn right'
+    : 'After one step, turn left';
 };
