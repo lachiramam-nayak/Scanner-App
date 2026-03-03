@@ -1,11 +1,31 @@
 import Constants from 'expo-constants';
 import { Building, Floor, Beacon, POI } from '../store/appStore';
 
-const API_URL =
+const envApiUrl =
   process.env.EXPO_PUBLIC_BACKEND_URL ||
   (Constants.expoConfig as any)?.extra?.EXPO_PUBLIC_BACKEND_URL ||
   (Constants.manifest as any)?.extra?.EXPO_PUBLIC_BACKEND_URL ||
   '';
+
+const hostUri =
+  (Constants.expoConfig as any)?.hostUri ||
+  (Constants.manifest2 as any)?.extra?.expoGo?.debuggerHost ||
+  '';
+
+const inferredHost = typeof hostUri === 'string' && hostUri.length > 0
+  ? hostUri.split(':')[0]
+  : '';
+
+const inferredApiUrl = inferredHost ? `http://${inferredHost}:8001` : '';
+
+const API_URL = envApiUrl || inferredApiUrl || '';
+
+if (!envApiUrl && inferredApiUrl) {
+  console.warn('[api] EXPO_PUBLIC_BACKEND_URL not set; using inferred backend URL:', inferredApiUrl);
+}
+if (!API_URL) {
+  console.warn('[api] Backend URL is empty. Set EXPO_PUBLIC_BACKEND_URL in frontend/.env');
+}
 
 const handleResponse = async (response: Response) => {
   if (!response.ok) {

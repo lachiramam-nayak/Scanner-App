@@ -44,8 +44,8 @@ public class PositioningService {
         List<MatchedBeacon> matchedBeacons = new ArrayList<>();
         
         for (BeaconScanRequest.ScannedBeacon scanned : request.getBeacons()) {
-            // Filter out weak signals (backend side safety): ignore RSSI below -75 dBm
-            if (scanned.getRssi() < -75) {
+            // Filter out weak signals (backend side safety): ignore RSSI below -100 dBm
+            if (scanned.getRssi() < -100) {
                 continue;
             }
 
@@ -63,11 +63,24 @@ public class PositioningService {
                     if (registered.isEmpty() && !lower.equals(upper)) {
                         registered = beaconRepository.findByUuidAndMajorAndMinor(lower, major, minor);
                     }
+                    if (registered.isEmpty()) {
+                        final String normalized = normalizeUuid(uuid);
+                        registered = beaconRepository.findAll().stream()
+                                .filter(b -> b.getMajor() != null && b.getMinor() != null)
+                                .filter(b -> b.getMajor().equals(major) && b.getMinor().equals(minor))
+                                .filter(b -> normalizeUuid(b.getUuid()).equals(normalized))
+                                .findFirst();
+                    }
                 }
             }
 
             if (registered.isPresent()) {
                 matchedBeacons.add(new MatchedBeacon(registered.get(), scanned.getRssi()));
+                log.debug("Matched beacon UUID={}, major={}, minor={}, rssi={}",
+                        scanned.getUuid(), scanned.getMajor(), scanned.getMinor(), scanned.getRssi());
+            } else {
+                log.debug("Unmatched beacon UUID={}, major={}, minor={}, rssi={}",
+                        scanned.getUuid(), scanned.getMajor(), scanned.getMinor(), scanned.getRssi());
             }
         }
 
@@ -218,6 +231,11 @@ public class PositioningService {
             txPower = -59;
         }
         return Math.pow(10.0, (txPower - rssi) / (10.0 * n));
+    }
+
+    private String normalizeUuid(String uuid) {
+        if (uuid == null) return "";
+        return uuid.replaceAll("[^A-Fa-f0-9]", "").toUpperCase();
     }
 
     /**

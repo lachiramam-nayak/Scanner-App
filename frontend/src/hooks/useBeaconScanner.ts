@@ -30,6 +30,7 @@ export interface UseBeaconScannerResult {
 
   // Position state
   currentPosition: PositionResponse | null;
+  positionUpdatedAt: number | null;
   isPositioning: boolean;
   positionError: string | null;
 
@@ -45,6 +46,9 @@ export interface UseBeaconScannerResult {
 }
 
 export function useBeaconScanner(): UseBeaconScannerResult {
+  const BEACON_CORRECTION_ALPHA = 0.2;
+  const MAX_BEACON_CORRECTION_PX = 10;
+  const MAX_BEACON_JUMP_PX = 60;
 
   // Scanner state
   const [isScanning, setIsScanning] = useState(false);
@@ -57,6 +61,7 @@ export function useBeaconScanner(): UseBeaconScannerResult {
 
   // Position state
   const [currentPosition, setCurrentPosition] = useState<PositionResponse | null>(null);
+  const [positionUpdatedAt, setPositionUpdatedAt] = useState<number | null>(null);
   const [isPositioning, setIsPositioning] = useState(false);
   const [positionError, setPositionError] = useState<string | null>(null);
 
@@ -74,6 +79,7 @@ export function useBeaconScanner(): UseBeaconScannerResult {
 
   // Refs to track latest values in callbacks
   const currentPositionRef = useRef<PositionResponse | null>(null);
+  const lastValidFixAtRef = useRef(0);
   const rssiThresholdRef = useRef<number>(-100);
   const setUserLocation = useAppStore((s) => s.setUserLocation);
   const setNavigationRouteStore = useAppStore((s) => s.setNavigationRoute);
@@ -94,13 +100,6 @@ export function useBeaconScanner(): UseBeaconScannerResult {
   const handleBeaconsFound = useCallback(async (beacons: ScannedBeacon[]) => {
     setScannedBeacons(beacons);
 
-    // Ignore beacon updates once PDR starts, or after one-shot fix is locked.
-    if (pdrActiveRef.current || pdrStartedRef.current) {
-      return;
-    }
-    if (hasInitialFixRef.current) {
-      return;
-    }
     if (isComputingFixRef.current) {
       return;
     }
@@ -119,17 +118,19 @@ export function useBeaconScanner(): UseBeaconScannerResult {
       return;
     }
 
+    // Send a wider beacon set so registered beacons are not missed when
+    // unknown beacons happen to have stronger RSSI than known ones.
     const top = usable
       .slice()
       .sort((a, b) => (b.avgRssi ?? b.rssi) - (a.avgRssi ?? a.rssi))
-      .slice(0, 3);
+      .slice(0, 12);
 
     try {
       isComputingFixRef.current = true;
       setIsPositioning(true);
       setPositionError(null);
 
-      // Use only the strongest beacon for a single-beacon lookup
+      // Send a broad candidate list; backend will match UUID/major/minor.
       const payload = top.map((b) => ({
         uuid: b.uuid,
         major: b.major,
@@ -141,41 +142,68 @@ export function useBeaconScanner(): UseBeaconScannerResult {
       const position = await positioningApi.computePosition(payload as any);
 
       if (position.valid) {
-        hasInitialFixRef.current = true;
+        if (!hasInitialFixRef.current) {
+          hasInitialFixRef.current = true;
+          initialPdrPositionRef.current = {
+            x: position.x,
+            y: position.y,
+            buildingId: position.buildingId,
+            floorId: position.floorId,
+          };
+        }
         setCurrentPosition(position);
+        lastValidFixAtRef.current = Date.now();
+        setPositionUpdatedAt(lastValidFixAtRef.current);
 
-        initialPdrPositionRef.current = {
-          x: position.x,
-          y: position.y,
-          buildingId: position.buildingId,
-          floorId: position.floorId,
-        };
-        // Also update global store user location
+        // Smoothly correct global location using continuous beacon fixes.
         try {
+          const currentLoc = useAppStore.getState().userLocation;
+          let nextX = position.x;
+          let nextY = position.y;
+          let nextSource: UserLocation['source'] = 'beacon';
+
+          if (
+            currentLoc &&
+            currentLoc.building_id === position.buildingId &&
+            currentLoc.floor_id === position.floorId
+          ) {
+            const dx = position.x - currentLoc.x;
+            const dy = position.y - currentLoc.y;
+            const rawDist = Math.sqrt(dx * dx + dy * dy);
+
+            if (Number.isFinite(rawDist) && rawDist <= MAX_BEACON_JUMP_PX) {
+              nextX = currentLoc.x + dx * BEACON_CORRECTION_ALPHA;
+              nextY = currentLoc.y + dy * BEACON_CORRECTION_ALPHA;
+              const mx = nextX - currentLoc.x;
+              const my = nextY - currentLoc.y;
+              const moveDist = Math.sqrt(mx * mx + my * my);
+              if (moveDist > MAX_BEACON_CORRECTION_PX && moveDist > 1e-6) {
+                const s = MAX_BEACON_CORRECTION_PX / moveDist;
+                nextX = currentLoc.x + mx * s;
+                nextY = currentLoc.y + my * s;
+              }
+              nextSource = 'beacon';
+            }
+          }
+
           const userLoc: UserLocation = {
             building_id: position.buildingId,
             floor_id: position.floorId,
-            x: position.x,
-            y: position.y,
-            source: 'beacon',
+            x: nextX,
+            y: nextY,
+            source: nextSource,
             timestamp: new Date(),
           };
           setUserLocation(userLoc);
         } catch (e) {
           console.warn('[useBeaconScanner] Failed to set user location in store', e);
         }
-
-        // One-shot scan mode: lock initial position and stop beacon updates.
-        if (beaconScanner.isScanningActive()) {
-          beaconScanner.stopScanning();
-        }
-        setIsScanning(false);
-        setScannedBeacons([]);
-
-        console.log(`[useBeaconScanner] Position (from strongest beacon): (${position.x.toFixed(1)}, ${position.y.toFixed(1)}) on ${position.floorName}`);
-        console.log('[useBeaconScanner] Initial fix locked, beacon scanning stopped (one-shot mode)');
       } else {
         setPositionError(position.errorMessage || 'Position computation failed');
+        if (Date.now() - lastValidFixAtRef.current > 3000) {
+          setCurrentPosition(null);
+          setPositionUpdatedAt(null);
+        }
       }
     } catch (error) {
       console.error('[useBeaconScanner] Position error:', error);
@@ -406,6 +434,7 @@ export function useBeaconScanner(): UseBeaconScannerResult {
 
     // Position state
     currentPosition,
+    positionUpdatedAt,
     isPositioning,
     positionError,
 

@@ -90,6 +90,11 @@ export class IndoorTracker {
   private mapHeightPx = 0;
   private realWidthM = 0;
   private realHeightM = 0;
+  private lastDeviationAt = 0;
+  private deviationCooldownMs = 3000;
+  private beaconCorrectionAlpha = 0.2;
+  private maxBeaconCorrectionPx = 10;
+  private maxBeaconJumpPx = 60;
 
   constructor(config?: Partial<TrackingConfig>) {
     this.config = { ...DEFAULT_CONFIG, ...(config || {}) };
@@ -260,7 +265,30 @@ export class IndoorTracker {
 
     const filtered = this.applyKalman(pos.x, pos.y);
     const snapped = this.snapToRoute(filtered.x, filtered.y);
-    this.updatePosition(snapped.x, snapped.y, 'beacon');
+    if (!this.lastPos) {
+      this.updatePosition(snapped.x, snapped.y, 'beacon');
+      return;
+    }
+
+    const dx = snapped.x - this.lastPos.x;
+    const dy = snapped.y - this.lastPos.y;
+    const rawDist = Math.sqrt(dx * dx + dy * dy);
+    if (!Number.isFinite(rawDist)) return;
+    if (rawDist > this.maxBeaconJumpPx) {
+      return;
+    }
+
+    let nx = this.lastPos.x + dx * this.beaconCorrectionAlpha;
+    let ny = this.lastPos.y + dy * this.beaconCorrectionAlpha;
+    const moveDx = nx - this.lastPos.x;
+    const moveDy = ny - this.lastPos.y;
+    const moveDist = Math.sqrt(moveDx * moveDx + moveDy * moveDy);
+    if (moveDist > this.maxBeaconCorrectionPx && moveDist > 1e-6) {
+      const s = this.maxBeaconCorrectionPx / moveDist;
+      nx = this.lastPos.x + moveDx * s;
+      ny = this.lastPos.y + moveDy * s;
+    }
+    this.updatePosition(nx, ny, 'beacon');
   }
 
   private trilaterate(beacons: Array<{ beacon: Beacon; rssi: number }>): { x: number; y: number } | null {
@@ -322,7 +350,7 @@ export class IndoorTracker {
       headingRad: this.headingRad,
       lastPos: this.lastPos,
     });
-    // Route-only progression: never drift with free heading movement.
+    // Route-only progression to avoid free-space drift.
     if (this.route.length < 2) {
       console.warn('[IndoorTracker] Route unavailable; skipping sensor step to avoid drift');
       return;
@@ -360,7 +388,11 @@ export class IndoorTracker {
       ? Math.sqrt(best.dist) / this.pixelsPerMeter
       : Number.POSITIVE_INFINITY;
     if (distMeters > this.config.deviationThresholdM && this.onDeviation) {
-      this.onDeviation();
+      const now = Date.now();
+      if (now - this.lastDeviationAt > this.deviationCooldownMs) {
+        this.lastDeviationAt = now;
+        this.onDeviation();
+      }
     }
     if (distMeters <= this.config.snapToleranceM) {
       return { x: best.x, y: best.y };
@@ -432,6 +464,12 @@ export class IndoorTracker {
       return;
     }
     this.lastPos = { x: nx, y: ny };
+    if (this.route.length >= 2) {
+      const projection = this.projectToRoute(nx, ny);
+      this.routeProgress = projection
+        ? { segmentIndex: projection.segmentIndex, t: projection.t }
+        : null;
+    }
     // debug log to observe blue-dot movement
     console.log('[IndoorTracker] updatePosition', { x: nx, y: ny, source });
     this.onPosition?.({ x: nx, y: ny, source, timestamp: new Date() });
