@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: ram_postgres
+    restart: always
+    user: "${MY_UID}:${MY_GID}"
+    environment:
+      POSTGRES_USER: ram
+      POSTGRES_PASSWORD: ram123
+      POSTGRES_DB: ramdb
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./pg_data:/var/lib/postgresql/data
+      - ./wal_archive:/wal_archive
+    command: >
+      postgres
+      -c wal_level=replica
+      -c archive_mode=on
+      -c archive_command='cp %p /wal_archive/%f'
+      -c archive_timeout=60
+      -c restore_command='cp /wal_archive/%f %p'
